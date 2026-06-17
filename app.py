@@ -11,7 +11,7 @@ import sys
 import json
 import subprocess
 from datetime import datetime
-from flask import Flask, jsonify, request, render_template_string
+from flask import Flask, jsonify, request, render_template_string, send_from_directory
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -25,26 +25,52 @@ INDEX_HTML = """
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Review RPC Forensic Investigator</title>
     <style>
-        body { font-family: monospace; background: #0a0a0a; color: #00ff88; padding: 40px; }
-        .panel { background: #141414; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .btn { background: #00ff88; color: #0a0a0a; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
-        pre { background: #000; padding: 15px; color: #fff; border: 1px solid #222; overflow-x: auto; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: monospace; background: #0a0a0a; color: #e0e0e0; padding: 40px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #00ff88; margin-bottom: 20px; border-bottom: 2px solid #00ff88; padding-bottom: 10px; }
+        .panel { background: #141414; border: 1px solid #222; padding: 25px; border-radius: 8px; margin-bottom: 25px; }
+        .btn { background: #00ff88; color: #0a0a0a; border: none; padding: 12px 25px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        .btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        input { padding: 12px; background: #000; color: #00ff88; border: 1px solid #333; width: 450px; font-family: monospace; font-size: 14px; border-radius: 4px; }
+        pre { background: #000; padding: 15px; color: #00ff88; border: 1px solid #222; overflow-x: auto; font-size: 12px; margin-top: 15px; max-height: 500px; }
+        .file-list { list-style: none; margin-top: 15px; }
+        .file-list li { background: #0d0d0d; border: 1px solid #222; padding: 10px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
+        .file-list a { color: #00ccff; text-decoration: none; font-weight: bold; }
+        .file-list a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-    <div class="panel">
-        <h1>Review RPC Request Debugger Pipeline</h1>
-        <p>Testing single protobuf path structure signature tracking.</p>
-        <input type="text" id="fidInput" style="width: 400px; padding: 10px; background: #000; color: #00ff88; border: 1px solid #333;" value="0x89b7cd7661e6c72d:0xbdfb66d87ee6d3eb">
-        <button class="btn" onclick="run()">Execute Test Endpoint Request</button>
-        <pre id="output">Output log channel verification text will reflect here...</pre>
+    <div class="container">
+        <h1>Review RPC Forensic Investigator Dashboard</h1>
+        
+        <div class="panel">
+            <h2>Execute Matrix Investigation</h2>
+            <p style="color: #888; margin-bottom: 15px;">Provide a Google Maps Feature ID to pass directly into both template test parameters.</p>
+            <input type="text" id="fidInput" value="0x89b7cd7661e6c72d:0xbdfb66d87ee6d3eb">
+            <button class="btn" id="execBtn" onclick="runInvestigation()">Trigger Multi-Template Test</button>
+            <pre id="outputLog">Awaiting runtime execution signal...</pre>
+        </div>
+
+        <div class="panel">
+            <h2>Preserved Evidence Artifacts</h2>
+            <button class="btn" style="background: #00ccff;" onclick="refreshFiles()">Refresh Directory</button>
+            <ul class="file-list" id="fileList">
+                <li style="color: #666;">No evidence files found inside directory.</li>
+            </ul>
+        </div>
     </div>
+
     <script>
-        async function run() {
-            const out = document.getElementById('output');
-            out.textContent = "Running validation pipeline query...";
+        async function runInvestigation() {
+            const btn = document.getElementById('execBtn');
+            const log = document.getElementById('outputLog');
+            btn.disabled = true;
+            log.textContent = "Spawning investigator subprocess runtime logs...";
+            
             try {
                 const res = await fetch('/api/investigate', {
                     method: 'POST',
@@ -52,9 +78,31 @@ INDEX_HTML = """
                     body: JSON.stringify({fid: document.getElementById('fidInput').value})
                 });
                 const data = await res.json();
-                out.textContent = JSON.stringify(data, null, 2);
-            } catch(e) { out.textContent = "Error running trace: " + e.message; }
+                log.textContent = JSON.stringify(data, null, 2);
+                await refreshFiles();
+            } catch(e) {
+                log.textContent = "Runtime tracking exception: " + e.message;
+            } finally {
+                btn.disabled = false;
+            }
         }
+
+        async function refreshFiles() {
+            try {
+                const res = await fetch('/api/results');
+                const data = await res.json();
+                const list = document.getElementById('fileList');
+                if(data.files && data.files.length > 0) {
+                    list.innerHTML = data.files.map(f => 
+                        `<li><span>${f.name} (${(f.size/1024).toFixed(2)} KB)</span><a href="/api/results/${f.name}" download>Download</a></li>`
+                    ).join('');
+                } else {
+                    list.innerHTML = '<li style="color: #666;">No evidence files found inside directory.</li>';
+                }
+            } catch(e) { console.error("Error updating files dashboard:", e); }
+        }
+        
+        refreshFiles();
     </script>
 </body>
 </html>
@@ -95,19 +143,27 @@ FID = "{fid}"
 fid_data = phase_1_fid_analysis(FID)
 endpoint_data = phase_2_endpoint_construction(fid_data)
 request_data = phase_3_request_execution(endpoint_data)
+validation_data = phase_4_payload_validation(request_data)
+structure_data = phase_5_deep_structural_mapping(request_data)
+count_data = phase_6_review_count_investigation(request_data)
+distribution_data = phase_7_distribution_detection(request_data)
+review_block_data = phase_8_review_block_detection(request_data)
+score_data = phase_9_evidence_scoring(validation_data, count_data, distribution_data, review_block_data)
 
-msg = build_telegram_report(fid_data, request_data, None, None, None, None)
+save_evidence_files(fid_data, endpoint_data, request_data, validation_data, structure_data, count_data, distribution_data, review_block_data, score_data)
+msg = build_telegram_report(fid_data, request_data, validation_data, score_data)
 send_telegram_message(msg)
 
 print(json.dumps({{
     "status": "completed",
-    "diagnostics": request_data["diagnostics"],
-    "metrics": request_data["requests"][0]
+    "scores": score_data["scores"],
+    "overall_confidence": score_data["overall_confidence"],
+    "validations": validation_data["validations"]
 }}, default=str))
 """],
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=90,
             cwd=os.path.dirname(os.path.abspath(__file__)),
             env=env,
         )
@@ -124,20 +180,12 @@ print(json.dumps({{
                     continue
 
         if output_line:
-            raw_text = output_line.get("metrics", {}).get("text", "")
-            output_line["preview"] = raw_text[:1000]
-            
-            if "text" in output_line.get("metrics", {}):
-                del output_line["metrics"]["text"]
-            if "response.text[:5000]" in output_line.get("diagnostics", {}):
-                del output_line["diagnostics"]["response.text[:5000]"]
-                
             return jsonify(output_line)
         else:
             return jsonify({
                 "status": "execution_failed",
-                "stdout": result.stdout[-1500:] if result.stdout else "",
-                "stderr": result.stderr[-1500:] if result.stderr else ""
+                "stdout": result.stdout[-2000:] if result.stdout else "",
+                "stderr": result.stderr[-2000:] if result.stderr else ""
             }), 500
 
     except Exception as e:
@@ -145,12 +193,21 @@ print(json.dumps({{
 
 @app.route("/api/results")
 def list_results():
-    files = [{"name": f, "size": os.path.getsize(os.path.join(EVIDENCE_DIR, f))} for f in os.listdir(EVIDENCE_DIR)]
-    return jsonify({"files": files})
+    try:
+        files = []
+        for f in sorted(os.listdir(EVIDENCE_DIR), reverse=True):
+            p = os.path.join(EVIDENCE_DIR, f)
+            if os.path.isfile(p):
+                files.append({
+                    "name": f,
+                    "size": os.path.getsize(p)
+                })
+        return jsonify({"files": files})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/results/<path:filename>")
 def download_result(filename):
-    from flask import send_from_directory
     return send_from_directory(EVIDENCE_DIR, filename)
 
 if __name__ == "__main__":
