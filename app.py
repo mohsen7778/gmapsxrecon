@@ -82,7 +82,6 @@ def investigate():
 
     try:
         env = os.environ.copy()
-        # Fix 1: Pass the dynamic UI input parameter cleanly into the subprocess tracking metric
         env["INVESTIGATION_FID"] = fid
 
         result = subprocess.run(
@@ -125,11 +124,9 @@ print(json.dumps({{
                     continue
 
         if output_line:
-            # Fix 3: Expose first 1000 characters parameter preview directly inside the API response JSON
             raw_text = output_line.get("metrics", {}).get("text", "")
             output_line["preview"] = raw_text[:1000]
             
-            # Clean complete massive raw content string from top-level return to optimize transfer overhead
             if "text" in output_line.get("metrics", {}):
                 del output_line["metrics"]["text"]
             if "response.text[:5000]" in output_line.get("diagnostics", {}):
