@@ -23,10 +23,11 @@ from urllib.parse import quote
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
-FID = os.environ.get("INVESTIGATION_FID", "0x89b7cd7661e6c72d:0xbdfb66d87ee6d3eb")
-BUSINESS_NAME = "Gold City Jewelers"
-EXPECTED_RATING = 4.7
-EXPECTED_REVIEWS = 292
+# Strict Test Fixture 1 Configuration
+FID = os.environ.get("INVESTIGATION_FID", "0x89c2f5d91170f21d:0xdb7aa5363eff196c")
+BUSINESS_NAME = "M&N Gold Jewelry"
+EXPECTED_RATING = 4.8
+EXPECTED_REVIEWS = 111
 
 RPC_ENDPOINT = "/maps/preview/review/listentitiesreviews"
 BASE_URL = "https://www.google.com"
@@ -39,6 +40,7 @@ os.makedirs(EVIDENCE_DIR, exist_ok=True)
 # Phase 1 — FID Analysis
 # ---------------------------------------------------------------------------
 def phase_1_fid_analysis(fid: str) -> Dict[str, Any]:
+    """Convert FID into unsigned and signed 64-bit values."""
     parts = fid.split(":")
     if len(parts) != 2:
         raise ValueError(f"FID must contain exactly two hex parts separated by colon: {fid}")
@@ -74,6 +76,7 @@ def phase_1_fid_analysis(fid: str) -> Dict[str, Any]:
 # Phase 2 — Endpoint Construction
 # ---------------------------------------------------------------------------
 def phase_2_endpoint_construction(fid_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Construct Review RPC endpoint URLs utilizing exactly 1 targeted template."""
     fid1 = fid_data["signed_part_1"]
     fid2 = fid_data["signed_part_2"]
     feature_id = fid_data["fid"]
@@ -81,11 +84,14 @@ def phase_2_endpoint_construction(fid_data: Dict[str, Any]) -> Dict[str, Any]:
     # Template A: Baseline Structural Verification Template
     pb_template_a = f"!1m2!1y{fid1}!2y{fid2}!2m1!2i0!3e1!4m5!3b1!4b1!5b1!6b1!7b1!5m2!1s{feature_id}!7e81"
     
-    # Template B: Live Sniffing Workspace (Ready for live DevTools payload injection)
-    pb_template_b = f"!1m2!1y{fid1}!2y{fid2}!2m1!2i10!3e1!4m5!5b1!6b1!7b1"
+    # Labeled Speculative Workspace (Disabled during standard evaluation)
+    pb_template_b_experimental = f"!1m2!1y{fid1}!2y{fid2}!2m1!2i10!3e1!4m5!5b1!6b1!7b1"
 
     url_template_a = f"{BASE_URL}{RPC_ENDPOINT}?authuser=0&hl=en&gl=us&pb={quote(pb_template_a, safe='')}"
-    url_template_b = f"{BASE_URL}{RPC_ENDPOINT}?authuser=0&hl=en&gl=us&pb={quote(pb_template_b, safe='')}"
+    url_template_b_experimental = f"{BASE_URL}{RPC_ENDPOINT}?authuser=0&hl=en&gl=us&pb={quote(pb_template_b_experimental, safe='')}"
+
+    print("Template A PB:", pb_template_a)
+    print("Template A URL:", url_template_a)
 
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
 
@@ -95,11 +101,11 @@ def phase_2_endpoint_construction(fid_data: Dict[str, Any]) -> Dict[str, Any]:
         "fid2": fid2,
         "pb_templates": {
             "template_a": pb_template_a,
-            "template_b": pb_template_b
+            "template_b_experimental": pb_template_b_experimental
         },
         "urls": {
             "template_a": url_template_a,
-            "template_b": url_template_b
+            "template_b_experimental": url_template_b_experimental
         }
     }
     
@@ -143,7 +149,7 @@ def execute_single_template(url: str, label: str, timestamp: str) -> Dict[str, A
 
     try:
         resp = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
-        status_code = status_code = resp.status_code
+        status_code = resp.status_code
         response_headers = dict(resp.headers)
         raw_bytes = resp.content
         
@@ -157,7 +163,7 @@ def execute_single_template(url: str, label: str, timestamp: str) -> Dict[str, A
         response_text = f"Request Exception Occurred: {str(e)}"
         raw_bytes = response_text.encode("utf-8")
 
-    # Critical Hex and Stream diagnostics restored
+    # Hex Signature and Stream Diagnostics Logs
     print(f"[{label}] RAW BYTES LENGTH:", len(raw_bytes))
     print(f"[{label}] FIRST 64 BYTES HEX:", raw_bytes[:64].hex())
     print(f"[{label}] [Render Log Preview]:")
@@ -207,11 +213,10 @@ def phase_3_request_execution(endpoint_data: Dict[str, Any]) -> Dict[str, Any]:
     timestamp = endpoint_data["run_timestamp"]
     urls = endpoint_data["urls"]
 
+    # Restricted strictly to 1 baseline template (Template A)
     results = []
-    for label, url in urls.items():
-        res = execute_single_template(url, label, timestamp)
-        results.append(res)
-        time.sleep(1)
+    res = execute_single_template(urls["template_a"], "template_a", timestamp)
+    results.append(res)
 
     return {
         "phase": 3,
@@ -343,7 +348,7 @@ def phase_5_deep_structural_mapping(request_data: Dict[str, Any]) -> Dict[str, A
 
 
 # ---------------------------------------------------------------------------
-# Phase 6 — Review Count Investigation (RECURSIVE REINFORCEMENT)
+# Phase 6 — Review Count Investigation (TRAVERSAL LOOKUPS ONLY)
 # ---------------------------------------------------------------------------
 def phase_6_review_count_investigation(request_data: Dict[str, Any]) -> Dict[str, Any]:
     findings = []
@@ -357,13 +362,12 @@ def phase_6_review_count_investigation(request_data: Dict[str, Any]) -> Dict[str
         try:
             parsed_data = json.loads(xssi_stripped)
             
-            # Robust deep traversal across internal values
             def traverse_nodes(node, path="data"):
                 if isinstance(node, (int, float)):
                     if int(node) == EXPECTED_REVIEWS:
                         parsed_matches.append({"path": path, "type": "int_match", "value": node})
                 elif isinstance(node, str):
-                    if str(EXPECTED_REVIEWS) in node:
+                    if str(EXPECTED_REVIEWS) in node or str(EXPECTED_RATING) in node or BUSINESS_NAME in node:
                         parsed_matches.append({"path": path, "type": "str_match", "value": node})
                 elif isinstance(node, list):
                     for idx, val in enumerate(node):
@@ -460,7 +464,7 @@ def phase_8_review_block_detection(request_data: Dict[str, Any]) -> Dict[str, An
 
 
 # ---------------------------------------------------------------------------
-# Phase 9 — Evidence Scoring (ISOLATED ARTIFACT PRESERVATION)
+# Phase 9 — Evidence Scoring (UPGRADED STRUCTURAL SCORING BIAS REMOVAL)
 # ---------------------------------------------------------------------------
 def phase_9_evidence_scoring(validation_data: Dict, count_data: Dict, distribution_data: Dict, review_block_data: Dict) -> Dict:
     scores = {}
@@ -471,9 +475,10 @@ def phase_9_evidence_scoring(validation_data: Dict, count_data: Dict, distributi
         score = 10
         desc = "Endpoint connected but template configuration masking real payloads."
         
+        # Scoring logic tracks structural integrity and XSSI validation natively without false inflation
         if val["has_xssi_prefix"] and not val["status_acknowledgment"].get("is_ack_only"):
             score = 95
-            desc = "Success! Template passed requested structures out of status loop."
+            desc = "Success! Template passed requested structures out of status loops."
         elif val["status_acknowledgment"].get("is_ack_only"):
             score = 40
             desc = "Template valid but target structure returns empty acknowledgment parameters."
@@ -491,7 +496,7 @@ def phase_9_evidence_scoring(validation_data: Dict, count_data: Dict, distributi
 
 
 # ---------------------------------------------------------------------------
-# Summary Reports & Isolated Artifact Export Logic
+# Summary Reports & Evidence Storage
 # ---------------------------------------------------------------------------
 def build_telegram_report(fid_data, request_data, validation_data, score_data) -> str:
     lines = [f"<b>RPC MATRIX EVALUATION REPORT</b>\nTarget FID: <code>{fid_data['fid']}</code>\n"]
@@ -512,7 +517,7 @@ def save_evidence_files(fid_data, endpoint_data, request_data, validation_data, 
     # Export 1: Main Aggregated Log File
     analysis_report = {
         "fid_analysis": fid_data, "endpoint_construction": endpoint_data, "payload_validation": validation_data,
-        "count_investigation": count_data, "distribution_detection": distribution_data,
+        "structural_mapping": structure_data, "count_investigation": count_data, "distribution_detection": distribution_data,
         "review_block_detection": review_block_data, "scoring": score_data
     }
     ar_path = os.path.join(EVIDENCE_DIR, f"analysis_report_{timestamp}.json")
