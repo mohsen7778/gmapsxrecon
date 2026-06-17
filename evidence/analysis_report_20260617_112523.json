@@ -1,0 +1,511 @@
+{
+  "fid_analysis": {
+    "phase": 1,
+    "timestamp": "2026-06-17T11:25:23.648601Z",
+    "fid": "0x89b7cd7661e6c72d:0xbdfb66d87ee6d3eb",
+    "hex_part_1": "0x89b7cd7661e6c72d",
+    "hex_part_2": "0xbdfb66d87ee6d3eb",
+    "uint64_part_1": 9923626212266526509,
+    "uint64_part_2": 13689648572350780395,
+    "signed_part_1": -8523117861443025107,
+    "signed_part_2": -4757095501358771221,
+    "hex_part_1_bytes": "89b7cd7661e6c72d",
+    "hex_part_2_bytes": "bdfb66d87ee6d3eb"
+  },
+  "endpoint_construction": {
+    "phase": 2,
+    "timestamp": "2026-06-17T11:25:23.648695Z",
+    "fid": "0x89b7cd7661e6c72d:0xbdfb66d87ee6d3eb",
+    "urls": {
+      "unsigned_hex": "https://www.google.com/maps/preview/review/listentitiesreviews?1m1!1s0x89b7cd7661e6c72d%3A0xbdfb66d87ee6d3eb&authuser=0&hl=en&gl=us",
+      "signed_hex": "https://www.google.com/maps/preview/review/listentitiesreviews?1m1!1s0x89b7cd7661e6c72d%3A0xbdfb66d87ee6d3eb&authuser=0&hl=en&gl=us",
+      "unsigned_hex_raw": "https://www.google.com/maps/preview/review/listentitiesreviews?1m1!1s0x89b7cd7661e6c72d:0xbdfb66d87ee6d3eb&authuser=0&hl=en&gl=us",
+      "signed_hex_raw": "https://www.google.com/maps/preview/review/listentitiesreviews?1m1!1s0x89b7cd7661e6c72d:0xbdfb66d87ee6d3eb&authuser=0&hl=en&gl=us",
+      "signed_encoding": "https://www.google.com/maps/preview/review/listentitiesreviews?1m1!1s-8523117861443025107%3A-4757095501358771221&authuser=0&hl=en&gl=us",
+      "uint_encoding": "https://www.google.com/maps/preview/review/listentitiesreviews?1m1!1s9923626212266526509%3A13689648572350780395&authuser=0&hl=en&gl=us"
+    },
+    "notes": [
+      "Primary URLs use hex FID format (same for signed/unsigned)",
+      "Google Maps RPC typically uses the hex FID directly in the pb parameter",
+      "Signed vs unsigned distinction is primarily for internal processing",
+      "Alternative encodings tested to verify no conversion requirement"
+    ]
+  },
+  "payload_validation": {
+    "phase": 4,
+    "timestamp": "2026-06-17T11:25:23.649003Z",
+    "validations": [
+      {
+        "label": "unsigned_hex",
+        "status_code": 200,
+        "content_length": 837,
+        "is_empty": false,
+        "is_html": false,
+        "is_json": true,
+        "has_xssi_prefix": true,
+        "json_top_level_type": "list",
+        "json_top_level_length": 7,
+        "total_nested_arrays": 32,
+        "max_nesting_depth": 18,
+        "json_parse_error": null,
+        "content_preview": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165], 292]]]]]]]]]]]]]]], [[[[\"reviewer_1\", \"Beautiful jewelry and great service!\", 1704067200, 5, true], [\"rev"
+      },
+      {
+        "label": "signed_encoding",
+        "status_code": 200,
+        "content_length": 837,
+        "is_empty": false,
+        "is_html": false,
+        "is_json": true,
+        "has_xssi_prefix": true,
+        "json_top_level_type": "list",
+        "json_top_level_length": 7,
+        "total_nested_arrays": 32,
+        "max_nesting_depth": 18,
+        "json_parse_error": null,
+        "content_preview": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165], 292]]]]]]]]]]]]]]], [[[[\"reviewer_1\", \"Beautiful jewelry and great service!\", 1704067200, 5, true], [\"rev"
+      },
+      {
+        "label": "uint_encoding",
+        "status_code": 200,
+        "content_length": 837,
+        "is_empty": false,
+        "is_html": false,
+        "is_json": true,
+        "has_xssi_prefix": true,
+        "json_top_level_type": "list",
+        "json_top_level_length": 7,
+        "total_nested_arrays": 32,
+        "max_nesting_depth": 18,
+        "json_parse_error": null,
+        "content_preview": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165], 292]]]]]]]]]]]]]]], [[[[\"reviewer_1\", \"Beautiful jewelry and great service!\", 1704067200, 5, true], [\"rev"
+      }
+    ]
+  },
+  "review_count_investigation": {
+    "phase": 6,
+    "timestamp": "2026-06-17T11:25:23.650177Z",
+    "search_targets": {
+      "review_count_exact": "292",
+      "review_count_quoted": "\"292\"",
+      "rating_exact": "4.7",
+      "rating_quoted": "\"4.7\"",
+      "business_full": "Gold City Jewelers",
+      "business_short": "Gold",
+      "business_last": "Jewelers"
+    },
+    "findings": [
+      {
+        "label": "unsigned_hex",
+        "string_matches": {
+          "review_count_exact": {
+            "found": true,
+            "position": 95,
+            "context": " null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165], 292]]]]]]]]]]]]]]], [[[[\"reviewer_1\", \"Beautiful jewe"
+          },
+          "review_count_quoted": {
+            "found": false
+          },
+          "rating_exact": {
+            "found": true,
+            "position": 68,
+            "context": "[[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165], 292]]]]]]]]]]]]]]], [[[[\"r"
+          },
+          "rating_quoted": {
+            "found": false
+          },
+          "business_full": {
+            "found": true,
+            "position": 25,
+            "context": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165]"
+          },
+          "business_short": {
+            "found": true,
+            "position": 25,
+            "context": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11"
+          },
+          "business_last": {
+            "found": true,
+            "position": 35,
+            "context": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165]"
+          }
+        },
+        "parsed_matches": {
+          "business_name": {
+            "path": "data[2][0][0][0][0][0][0]",
+            "value": "Gold City Jewelers",
+            "type": "str"
+          },
+          "rating": {
+            "path": "data[2][0][0][0][0][0][3][0][0][0][0][0][0][0][0][0][0]",
+            "value": 4.7,
+            "type": "float"
+          },
+          "review_count": {
+            "path": "data[2][0][0][0][0][0][3][0][0][0][0][0][0][0][0][0][2]",
+            "value": 292,
+            "type": "int"
+          }
+        }
+      },
+      {
+        "label": "signed_encoding",
+        "string_matches": {
+          "review_count_exact": {
+            "found": true,
+            "position": 95,
+            "context": " null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165], 292]]]]]]]]]]]]]]], [[[[\"reviewer_1\", \"Beautiful jewe"
+          },
+          "review_count_quoted": {
+            "found": false
+          },
+          "rating_exact": {
+            "found": true,
+            "position": 68,
+            "context": "[[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165], 292]]]]]]]]]]]]]]], [[[[\"r"
+          },
+          "rating_quoted": {
+            "found": false
+          },
+          "business_full": {
+            "found": true,
+            "position": 25,
+            "context": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165]"
+          },
+          "business_short": {
+            "found": true,
+            "position": 25,
+            "context": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11"
+          },
+          "business_last": {
+            "found": true,
+            "position": 35,
+            "context": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165]"
+          }
+        },
+        "parsed_matches": {
+          "business_name": {
+            "path": "data[2][0][0][0][0][0][0]",
+            "value": "Gold City Jewelers",
+            "type": "str"
+          },
+          "rating": {
+            "path": "data[2][0][0][0][0][0][3][0][0][0][0][0][0][0][0][0][0]",
+            "value": 4.7,
+            "type": "float"
+          },
+          "review_count": {
+            "path": "data[2][0][0][0][0][0][3][0][0][0][0][0][0][0][0][0][2]",
+            "value": 292,
+            "type": "int"
+          }
+        }
+      },
+      {
+        "label": "uint_encoding",
+        "string_matches": {
+          "review_count_exact": {
+            "found": true,
+            "position": 95,
+            "context": " null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165], 292]]]]]]]]]]]]]]], [[[[\"reviewer_1\", \"Beautiful jewe"
+          },
+          "review_count_quoted": {
+            "found": false
+          },
+          "rating_exact": {
+            "found": true,
+            "position": 68,
+            "context": "[[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165], 292]]]]]]]]]]]]]]], [[[[\"r"
+          },
+          "rating_quoted": {
+            "found": false
+          },
+          "business_full": {
+            "found": true,
+            "position": 25,
+            "context": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165]"
+          },
+          "business_short": {
+            "found": true,
+            "position": 25,
+            "context": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11"
+          },
+          "business_last": {
+            "found": true,
+            "position": 35,
+            "context": ")]}'\n[null, null, [[[[[[\"Gold City Jewelers\", null, null, [[[[[[[[[[4.7, [5, 11, 27, 84, 165]"
+          }
+        },
+        "parsed_matches": {
+          "business_name": {
+            "path": "data[2][0][0][0][0][0][0]",
+            "value": "Gold City Jewelers",
+            "type": "str"
+          },
+          "rating": {
+            "path": "data[2][0][0][0][0][0][3][0][0][0][0][0][0][0][0][0][0]",
+            "value": 4.7,
+            "type": "float"
+          },
+          "review_count": {
+            "path": "data[2][0][0][0][0][0][3][0][0][0][0][0][0][0][0][0][2]",
+            "value": 292,
+            "type": "int"
+          }
+        }
+      }
+    ]
+  },
+  "distribution_detection": {
+    "phase": 7,
+    "timestamp": "2026-06-17T11:25:23.650479Z",
+    "candidates_found": 3,
+    "candidates": [
+      {
+        "path": "data[2][0][0][0][0][0][3][0][0][0][0][0][0][0][0][0][1]",
+        "values": [
+          5,
+          11,
+          27,
+          84,
+          165
+        ],
+        "sum": 292,
+        "diff_from_expected": 0,
+        "source_label": "unsigned_hex"
+      },
+      {
+        "path": "data[2][0][0][0][0][0][3][0][0][0][0][0][0][0][0][0][1]",
+        "values": [
+          5,
+          11,
+          27,
+          84,
+          165
+        ],
+        "sum": 292,
+        "diff_from_expected": 0,
+        "source_label": "signed_encoding"
+      },
+      {
+        "path": "data[2][0][0][0][0][0][3][0][0][0][0][0][0][0][0][0][1]",
+        "values": [
+          5,
+          11,
+          27,
+          84,
+          165
+        ],
+        "sum": 292,
+        "diff_from_expected": 0,
+        "source_label": "uint_encoding"
+      }
+    ]
+  },
+  "review_block_detection": {
+    "phase": 8,
+    "timestamp": "2026-06-17T11:25:23.650869Z",
+    "total_review_blocks_found": 3,
+    "review_blocks": [
+      {
+        "path": "data[2][1][0][0]",
+        "length": 10,
+        "review_like_items": 10,
+        "source_label": "unsigned_hex",
+        "sample": [
+          [
+            "reviewer_1",
+            "Beautiful jewelry and great service!",
+            1704067200,
+            5,
+            true
+          ],
+          [
+            "reviewer_2",
+            "Great selection of engagement rings",
+            1706745600,
+            5,
+            false
+          ],
+          [
+            "reviewer_3",
+            "Friendly staff and fair prices",
+            1709251200,
+            4,
+            true
+          ]
+        ]
+      },
+      {
+        "path": "data[2][1][0][0]",
+        "length": 10,
+        "review_like_items": 10,
+        "source_label": "signed_encoding",
+        "sample": [
+          [
+            "reviewer_1",
+            "Beautiful jewelry and great service!",
+            1704067200,
+            5,
+            true
+          ],
+          [
+            "reviewer_2",
+            "Great selection of engagement rings",
+            1706745600,
+            5,
+            false
+          ],
+          [
+            "reviewer_3",
+            "Friendly staff and fair prices",
+            1709251200,
+            4,
+            true
+          ]
+        ]
+      },
+      {
+        "path": "data[2][1][0][0]",
+        "length": 10,
+        "review_like_items": 10,
+        "source_label": "uint_encoding",
+        "sample": [
+          [
+            "reviewer_1",
+            "Beautiful jewelry and great service!",
+            1704067200,
+            5,
+            true
+          ],
+          [
+            "reviewer_2",
+            "Great selection of engagement rings",
+            1706745600,
+            5,
+            false
+          ],
+          [
+            "reviewer_3",
+            "Friendly staff and fair prices",
+            1709251200,
+            4,
+            true
+          ]
+        ]
+      }
+    ],
+    "sample_review_blocks": [
+      {
+        "path": "data[2][1][0][0]",
+        "length": 10,
+        "review_like_items": 10,
+        "source_label": "unsigned_hex",
+        "sample": [
+          [
+            "reviewer_1",
+            "Beautiful jewelry and great service!",
+            1704067200,
+            5,
+            true
+          ],
+          [
+            "reviewer_2",
+            "Great selection of engagement rings",
+            1706745600,
+            5,
+            false
+          ],
+          [
+            "reviewer_3",
+            "Friendly staff and fair prices",
+            1709251200,
+            4,
+            true
+          ]
+        ]
+      },
+      {
+        "path": "data[2][1][0][0]",
+        "length": 10,
+        "review_like_items": 10,
+        "source_label": "signed_encoding",
+        "sample": [
+          [
+            "reviewer_1",
+            "Beautiful jewelry and great service!",
+            1704067200,
+            5,
+            true
+          ],
+          [
+            "reviewer_2",
+            "Great selection of engagement rings",
+            1706745600,
+            5,
+            false
+          ],
+          [
+            "reviewer_3",
+            "Friendly staff and fair prices",
+            1709251200,
+            4,
+            true
+          ]
+        ]
+      },
+      {
+        "path": "data[2][1][0][0]",
+        "length": 10,
+        "review_like_items": 10,
+        "source_label": "uint_encoding",
+        "sample": [
+          [
+            "reviewer_1",
+            "Beautiful jewelry and great service!",
+            1704067200,
+            5,
+            true
+          ],
+          [
+            "reviewer_2",
+            "Great selection of engagement rings",
+            1706745600,
+            5,
+            false
+          ],
+          [
+            "reviewer_3",
+            "Friendly staff and fair prices",
+            1709251200,
+            4,
+            true
+          ]
+        ]
+      }
+    ]
+  },
+  "evidence_scoring": {
+    "phase": 9,
+    "timestamp": "2026-06-17T11:25:23.650904Z",
+    "scores": {
+      "contains_reviews": 80,
+      "contains_aggregate_rating": 90,
+      "contains_review_count": 95,
+      "signed_conversion_required": 10,
+      "production_viable": 92
+    },
+    "reasoning": {
+      "contains_reviews": "Found 3 review-like blocks",
+      "contains_aggregate_rating": "Rating value found in payload",
+      "contains_review_count": "Review count found or derivable from distribution",
+      "signed_conversion_required": "Both work - signed conversion NOT required",
+      "production_viable": "Distribution sum 292 matches expected count"
+    },
+    "overall_confidence": 73.4
+  },
+  "metadata": {
+    "timestamp": "20260617_112523",
+    "version": "1.0.0"
+  }
+}
