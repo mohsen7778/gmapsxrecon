@@ -13,6 +13,9 @@ import subprocess
 from datetime import datetime
 from flask import Flask, jsonify, request, render_template_string, send_from_directory
 
+# Import the templates register map to explicitly populate the drop-down selector parameters dynamically
+from templates import TEMPLATES
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__)
@@ -20,6 +23,7 @@ app = Flask(__name__)
 EVIDENCE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "evidence")
 os.makedirs(EVIDENCE_DIR, exist_ok=True)
 
+# UI Template modified to add the drop-down select list parameters cleanly
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -35,7 +39,9 @@ INDEX_HTML = """
         .panel { background: #141414; border: 1px solid #222; padding: 25px; border-radius: 8px; margin-bottom: 25px; }
         .btn { background: #00ff88; color: #0a0a0a; border: none; padding: 12px 25px; font-weight: bold; cursor: pointer; border-radius: 4px; }
         .btn:disabled { background: #333; color: #666; cursor: not-allowed; }
-        input { padding: 12px; background: #000; color: #00ff88; border: 1px solid #333; width: 450px; font-family: monospace; font-size: 14px; border-radius: 4px; }
+        input, select { padding: 12px; background: #000; color: #00ff88; border: 1px solid #333; font-family: monospace; font-size: 14px; border-radius: 4px; }
+        input { width: 450px; }
+        select { width: 250px; margin-right: 10px; }
         pre { background: #000; padding: 15px; color: #00ff88; border: 1px solid #222; overflow-x: auto; font-size: 12px; margin-top: 15px; max-height: 500px; }
         .file-list { list-style: none; margin-top: 15px; }
         .file-list li { background: #0d0d0d; border: 1px solid #222; padding: 10px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
@@ -49,9 +55,16 @@ INDEX_HTML = """
         
         <div class="panel">
             <h2>Execute Matrix Investigation</h2>
-            <p style="color: #888; margin-bottom: 15px;">Provide a Google Maps Feature ID to pass directly into both template test parameters.</p>
-            <input type="text" id="fidInput" value="0x89b7cd7661e6c72d:0xbdfb66d87ee6d3eb">
-            <button class="btn" id="execBtn" onclick="runInvestigation()">Trigger Multi-Template Test</button>
+            <p style="color: #888; margin-bottom: 15px;">Select an isolated Protobuf string layout template and verify dynamic FID execution paths.</p>
+            <div style="margin-bottom: 15px; display: flex; align-items: center;">
+                <select id="templateSelect">
+                    {% for key in templates_keys %}
+                    <option value="{{ key }}">{{ key }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" id="fidInput" value="0x89c2f5d91170f21d:0xdb7aa5363eff196c">
+            </div>
+            <button class="btn" id="execBtn" onclick="runInvestigation()">Trigger Single-Template Test</button>
             <pre id="outputLog">Awaiting runtime execution signal...</pre>
         </div>
 
@@ -75,7 +88,10 @@ INDEX_HTML = """
                 const res = await fetch('/api/investigate', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({fid: document.getElementById('fidInput').value})
+                    body: JSON.stringify({
+                        fid: document.getElementById('fidInput').value,
+                        template: document.getElementById('templateSelect').value
+                    })
                 });
                 const data = await res.json();
                 log.textContent = JSON.stringify(data, null, 2);
@@ -110,7 +126,7 @@ INDEX_HTML = """
 
 @app.route("/")
 def index():
-    return render_template_string(INDEX_HTML)
+    return render_template_string(INDEX_HTML, templates_keys=list(TEMPLATES.keys()))
 
 @app.route("/api/health")
 def health():
@@ -123,14 +139,17 @@ def health():
 @app.route("/api/investigate", methods=["POST"])
 def investigate():
     data = request.get_json(silent=True) or {}
-    fid = data.get("fid", "0x89b7cd7661e6c72d:0xbdfb66d87ee6d3eb")
+    fid = data.get("fid", "0x89c2f5d91170f21d:0xdb7aa5363eff196c")
+    selected_template = data.get("template", "template_a")
 
     if ":" not in fid or not fid.startswith("0x"):
-        return jsonify({"status": "error", "error": "Invalid format layout configuration metric"}), 400
+        return jsonify({"status": "error", "error": "Invalid format layout configuration parameter."}), 400
 
     try:
         env = os.environ.copy()
         env["INVESTIGATION_FID"] = fid
+        # Map the drop-down template selection directly into the investigator's ACTIVE_TEMPLATE context
+        env["ACTIVE_TEMPLATE"] = selected_template
 
         result = subprocess.run(
             [sys.executable, "-c", f"""
