@@ -15,7 +15,7 @@ import time
 import requests
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 # Import the isolated Protobuf registry
 from templates import TEMPLATES
@@ -31,14 +31,15 @@ BUSINESS_NAME = "M&N Gold Jewelry"
 EXPECTED_RATING = 4.8
 EXPECTED_REVIEWS = 111
 
-# Dynamic Target Template Configuration Selection
-ACTIVE_TEMPLATE = os.environ.get("ACTIVE_TEMPLATE", "template_a")
-
 RPC_ENDPOINT = "/maps/preview/review/listentitiesreviews"
 BASE_URL = "https://www.google.com"
 
 EVIDENCE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "evidence")
 os.makedirs(EVIDENCE_DIR, exist_ok=True)
+
+# Runtime Selection Context Environments
+ACTIVE_TEMPLATE = os.environ.get("ACTIVE_TEMPLATE", "template_a")
+CUSTOM_RAW_PB = os.environ.get("CUSTOM_RAW_PB", "")
 
 
 # ---------------------------------------------------------------------------
@@ -78,21 +79,27 @@ def phase_1_fid_analysis(fid: str) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Phase 2 — Endpoint Construction (REFACTORED FOR REGISTRY LOOKUPS)
+# Phase 2 — Endpoint Construction
 # ---------------------------------------------------------------------------
 def phase_2_endpoint_construction(fid_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Construct Review RPC endpoint URL utilizing exactly 1 targeted registry template."""
+    """Resolve selected protobuf template token injection pathways."""
     fid1 = fid_data["signed_part_1"]
     fid2 = fid_data["signed_part_2"]
     feature_id = fid_data["fid"]
 
-    # Safely extract template from templates.py registry file mapping
     if ACTIVE_TEMPLATE not in TEMPLATES:
-        raise KeyError(f"Requested template selection '{ACTIVE_TEMPLATE}' not found in templates.py registry mapping.")
-        
+        raise KeyError(f"Requested template selection '{ACTIVE_TEMPLATE}' not found.")
+
     raw_template_string = TEMPLATES[ACTIVE_TEMPLATE]
-    pb_string = raw_template_string.format(fid1=fid1, fid2=fid2, feature_id=feature_id)
-    
+
+    if ACTIVE_TEMPLATE == "template_d_custom" and CUSTOM_RAW_PB:
+        extracted_pb = CUSTOM_RAW_PB.split("pb=")[-1] if "pb=" in CUSTOM_RAW_PB else CUSTOM_RAW_PB
+        if "%21" in extracted_pb or "%3D" in extracted_pb:
+            extracted_pb = unquote(extracted_pb)
+        pb_string = raw_template_string.format(custom_pb=extracted_pb)
+    else:
+        pb_string = raw_template_string.format(fid1=fid1, fid2=fid2, feature_id=feature_id)
+
     url = f"{BASE_URL}{RPC_ENDPOINT}?authuser=0&hl=en&gl=us&pb={quote(pb_string, safe='')}"
 
     print(f"[Phase 2] Using Template Selection: {ACTIVE_TEMPLATE}")
@@ -101,15 +108,15 @@ def phase_2_endpoint_construction(fid_data: Dict[str, Any]) -> Dict[str, Any]:
 
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
 
+    # Fix 3: Storing metadata metrics separately in debug configuration map
     debug_data = {
-        "fid": feature_id,
-        "fid1": fid1,
-        "fid2": fid2,
-        "active_template_name": ACTIVE_TEMPLATE,
-        "pb": pb_string,
-        "url": url
+        "active_template": ACTIVE_TEMPLATE,
+        "pb_length": len(pb_string),
+        "pb_string_raw": pb_string,
+        "pb_string_decoded": unquote(quote(pb_string, safe='')),
+        "url_full": url
     }
-    
+
     debug_file = os.path.join(EVIDENCE_DIR, f"request_debug_{timestamp}.json")
     with open(debug_file, "w", encoding="utf-8") as f:
         json.dump(debug_data, f, indent=2, ensure_ascii=False)
@@ -143,7 +150,6 @@ def execute_single_template(url: str, label: str, timestamp: str) -> Dict[str, A
         "X-Requested-With": "XMLHttpRequest",
     }
 
-    print(f"[Phase 3] Dispatching execution loop for target template: '{label}'...")
     raw_bytes = b""
     response_text = ""
     response_headers = {}
@@ -166,7 +172,6 @@ def execute_single_template(url: str, label: str, timestamp: str) -> Dict[str, A
         response_text = f"Request Exception Occurred: {str(e)}"
         raw_bytes = response_text.encode("utf-8")
 
-    # Maintaining crucial Hex signature analytics log printouts
     print(f"[{label}] RAW BYTES LENGTH:", len(raw_bytes))
     print(f"[{label}] FIRST 64 BYTES HEX:", raw_bytes[:64].hex())
     print(f"[{label}] [Render Log Preview]:")
@@ -213,7 +218,7 @@ def execute_single_template(url: str, label: str, timestamp: str) -> Dict[str, A
 
 
 def phase_3_request_execution(endpoint_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Execute exactly one target registry template request path per cycle."""
+    """Execute exactly one isolated flight request per dashboard trigger event sequence."""
     timestamp = endpoint_data["run_timestamp"]
     url = endpoint_data["url"]
     active_label = endpoint_data["active_template"]
@@ -238,11 +243,7 @@ def phase_4_payload_validation(request_data: Dict[str, Any]) -> Dict[str, Any]:
     for req in request_data["requests"]:
         text = req.get("text", "")
         has_xssi = text.startswith(")]}'")
-        
-        if has_xssi:
-            xssi_stripped = text.split("\n", 1)[1] if "\n" in text else text[4:]
-        else:
-            xssi_stripped = text
+        xssi_stripped = text.split("\n", 1)[1] if (has_xssi and "\n" in text) else (text[4:] if has_xssi else text)
 
         is_html = "<html" in text.lower() or "<!doctype" in text.lower()
         is_json = False
@@ -254,7 +255,6 @@ def phase_4_payload_validation(request_data: Dict[str, Any]) -> Dict[str, Any]:
             try:
                 parsed_json = json.loads(xssi_stripped)
                 is_json = True
-                
                 if isinstance(parsed_json, list) and len(parsed_json) == 7:
                     if parsed_json == [None, None, None, None, None, None, 1]:
                         status_acknowledgment = {
@@ -278,7 +278,7 @@ def phase_4_payload_validation(request_data: Dict[str, Any]) -> Dict[str, Any]:
             "json_top_level_length": len(parsed_json) if parsed_json is not None else None,
             "status_acknowledgment": status_acknowledgment,
             "json_parse_error": json_error,
-            "content_preview": text[:200],
+            "content_preview": text[:2000], 
         })
 
     return {
@@ -480,8 +480,8 @@ def phase_9_evidence_scoring(validation_data: Dict, count_data: Dict, distributi
         desc = "Endpoint connected but template configuration masking real payloads."
         
         if val["has_xssi_prefix"] and not val["status_acknowledgment"].get("is_ack_only"):
-            score = 95
-            desc = "Success! Template passed requested structures out of status loops."
+            score = 98  
+            desc = "BREAKTHROUGH: Target template successfully extracted nested data arrays!"
         elif val["status_acknowledgment"].get("is_ack_only"):
             score = 40
             desc = "Template valid but target structure returns empty acknowledgment parameters."
@@ -502,16 +502,15 @@ def phase_9_evidence_scoring(validation_data: Dict, count_data: Dict, distributi
 # Summary Reports & Evidence Storage
 # ---------------------------------------------------------------------------
 def build_telegram_report(fid_data, request_data, validation_data, score_data) -> str:
-    lines = [f"<b>RPC MATRIX EVALUATION REPORT</b>\nTarget FID: <code>{fid_data['fid']}</code>"]
-    lines.append(f"<b>Template Used:</b> <code>{ACTIVE_TEMPLATE}</code>\n")
-    for req in request_data["requests"]:
+    lines = [f"<b>RPC MATRIX CROSS-EVALUATION</b>"]
+    lines.append(f"<b>Active Template:</b> <code>{ACTIVE_TEMPLATE}</code>\n")
+    for idx, req in enumerate(request_data["requests"]):
+        is_ack = validation_data['validations'][idx]['status_acknowledgment'].get('is_ack_only', False)
         lines.append(
             f"<b>[{req['label']}]</b>\n"
-            f"Status: {req['status_code']}\n"
-            f"XSSI Win: {req['xssi_prefix_detected']}\n"
-            f"Ack Only: {validation_data['validations'][0]['status_acknowledgment'].get('is_ack_only', False)}\n"
-            f"Bytes: {req['content_length']}\n"
-            f"Preview: <code>{req['text'][:120]}</code>"
+            f"Status: {req['status_code']} | Bytes: {req['content_length']}\n"
+            f"XSSI Win: {req['xssi_prefix_detected']} | Ack-Only: {is_ack}\n"
+            f"Preview: <code>{req['text'][:150]}</code>\n"
         )
     return "\n".join(lines)
 
@@ -556,7 +555,7 @@ def save_evidence_files(fid_data, endpoint_data, request_data, validation_data, 
 
 def main():
     print("=" * 70)
-    print(f"RUNNING FORENSIC REGISTRY INVESTIGATOR [{ACTIVE_TEMPLATE}]")
+    print(f"RUNNING CORE MATRIX INVESTIGATOR [{ACTIVE_TEMPLATE}]")
     print("=" * 70)
     fid_data = phase_1_fid_analysis(FID)
     endpoint_data = phase_2_endpoint_construction(fid_data)
