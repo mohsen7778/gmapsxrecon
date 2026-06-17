@@ -17,17 +17,22 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
 from urllib.parse import quote
 
+# Import the isolated Protobuf registry
+from templates import TEMPLATES
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
-# Strict Test Fixture 1 Configuration
 FID = os.environ.get("INVESTIGATION_FID", "0x89c2f5d91170f21d:0xdb7aa5363eff196c")
 BUSINESS_NAME = "M&N Gold Jewelry"
 EXPECTED_RATING = 4.8
 EXPECTED_REVIEWS = 111
+
+# Dynamic Target Template Configuration Selection
+ACTIVE_TEMPLATE = os.environ.get("ACTIVE_TEMPLATE", "template_a")
 
 RPC_ENDPOINT = "/maps/preview/review/listentitiesreviews"
 BASE_URL = "https://www.google.com"
@@ -73,25 +78,26 @@ def phase_1_fid_analysis(fid: str) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Phase 2 — Endpoint Construction
+# Phase 2 — Endpoint Construction (REFACTORED FOR REGISTRY LOOKUPS)
 # ---------------------------------------------------------------------------
 def phase_2_endpoint_construction(fid_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Construct Review RPC endpoint URLs utilizing exactly 1 targeted template."""
+    """Construct Review RPC endpoint URL utilizing exactly 1 targeted registry template."""
     fid1 = fid_data["signed_part_1"]
     fid2 = fid_data["signed_part_2"]
     feature_id = fid_data["fid"]
 
-    # Template A: Baseline Structural Verification Template
-    pb_template_a = f"!1m2!1y{fid1}!2y{fid2}!2m1!2i0!3e1!4m5!3b1!4b1!5b1!6b1!7b1!5m2!1s{feature_id}!7e81"
+    # Safely extract template from templates.py registry file mapping
+    if ACTIVE_TEMPLATE not in TEMPLATES:
+        raise KeyError(f"Requested template selection '{ACTIVE_TEMPLATE}' not found in templates.py registry mapping.")
+        
+    raw_template_string = TEMPLATES[ACTIVE_TEMPLATE]
+    pb_string = raw_template_string.format(fid1=fid1, fid2=fid2, feature_id=feature_id)
     
-    # Labeled Speculative Workspace (Disabled during standard evaluation)
-    pb_template_b_experimental = f"!1m2!1y{fid1}!2y{fid2}!2m1!2i10!3e1!4m5!5b1!6b1!7b1"
+    url = f"{BASE_URL}{RPC_ENDPOINT}?authuser=0&hl=en&gl=us&pb={quote(pb_string, safe='')}"
 
-    url_template_a = f"{BASE_URL}{RPC_ENDPOINT}?authuser=0&hl=en&gl=us&pb={quote(pb_template_a, safe='')}"
-    url_template_b_experimental = f"{BASE_URL}{RPC_ENDPOINT}?authuser=0&hl=en&gl=us&pb={quote(pb_template_b_experimental, safe='')}"
-
-    print("Template A PB:", pb_template_a)
-    print("Template A URL:", url_template_a)
+    print(f"[Phase 2] Using Template Selection: {ACTIVE_TEMPLATE}")
+    print("PB:", pb_string)
+    print("URL:", url)
 
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
 
@@ -99,14 +105,9 @@ def phase_2_endpoint_construction(fid_data: Dict[str, Any]) -> Dict[str, Any]:
         "fid": feature_id,
         "fid1": fid1,
         "fid2": fid2,
-        "pb_templates": {
-            "template_a": pb_template_a,
-            "template_b_experimental": pb_template_b_experimental
-        },
-        "urls": {
-            "template_a": url_template_a,
-            "template_b_experimental": url_template_b_experimental
-        }
+        "active_template_name": ACTIVE_TEMPLATE,
+        "pb": pb_string,
+        "url": url
     }
     
     debug_file = os.path.join(EVIDENCE_DIR, f"request_debug_{timestamp}.json")
@@ -117,7 +118,9 @@ def phase_2_endpoint_construction(fid_data: Dict[str, Any]) -> Dict[str, Any]:
         "phase": 2,
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "fid": feature_id,
-        "urls": debug_data["urls"],
+        "active_template": ACTIVE_TEMPLATE,
+        "pb": pb_string,
+        "url": url,
         "debug_file": debug_file,
         "run_timestamp": timestamp
     }
@@ -140,7 +143,7 @@ def execute_single_template(url: str, label: str, timestamp: str) -> Dict[str, A
         "X-Requested-With": "XMLHttpRequest",
     }
 
-    print(f"[Phase 3] Dispatching execution loop for target: '{label}'...")
+    print(f"[Phase 3] Dispatching execution loop for target template: '{label}'...")
     raw_bytes = b""
     response_text = ""
     response_headers = {}
@@ -163,7 +166,7 @@ def execute_single_template(url: str, label: str, timestamp: str) -> Dict[str, A
         response_text = f"Request Exception Occurred: {str(e)}"
         raw_bytes = response_text.encode("utf-8")
 
-    # Hex Signature and Stream Diagnostics Logs
+    # Maintaining crucial Hex signature analytics log printouts
     print(f"[{label}] RAW BYTES LENGTH:", len(raw_bytes))
     print(f"[{label}] FIRST 64 BYTES HEX:", raw_bytes[:64].hex())
     print(f"[{label}] [Render Log Preview]:")
@@ -210,12 +213,13 @@ def execute_single_template(url: str, label: str, timestamp: str) -> Dict[str, A
 
 
 def phase_3_request_execution(endpoint_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Execute exactly one target registry template request path per cycle."""
     timestamp = endpoint_data["run_timestamp"]
-    urls = endpoint_data["urls"]
+    url = endpoint_data["url"]
+    active_label = endpoint_data["active_template"]
 
-    # Restricted strictly to 1 baseline template (Template A)
     results = []
-    res = execute_single_template(urls["template_a"], "template_a", timestamp)
+    res = execute_single_template(url, active_label, timestamp)
     results.append(res)
 
     return {
@@ -348,7 +352,7 @@ def phase_5_deep_structural_mapping(request_data: Dict[str, Any]) -> Dict[str, A
 
 
 # ---------------------------------------------------------------------------
-# Phase 6 — Review Count Investigation (TRAVERSAL LOOKUPS ONLY)
+# Phase 6 — Review Count Investigation
 # ---------------------------------------------------------------------------
 def phase_6_review_count_investigation(request_data: Dict[str, Any]) -> Dict[str, Any]:
     findings = []
@@ -464,7 +468,7 @@ def phase_8_review_block_detection(request_data: Dict[str, Any]) -> Dict[str, An
 
 
 # ---------------------------------------------------------------------------
-# Phase 9 — Evidence Scoring (UPGRADED STRUCTURAL SCORING BIAS REMOVAL)
+# Phase 9 — Evidence Scoring
 # ---------------------------------------------------------------------------
 def phase_9_evidence_scoring(validation_data: Dict, count_data: Dict, distribution_data: Dict, review_block_data: Dict) -> Dict:
     scores = {}
@@ -475,7 +479,6 @@ def phase_9_evidence_scoring(validation_data: Dict, count_data: Dict, distributi
         score = 10
         desc = "Endpoint connected but template configuration masking real payloads."
         
-        # Scoring logic tracks structural integrity and XSSI validation natively without false inflation
         if val["has_xssi_prefix"] and not val["status_acknowledgment"].get("is_ack_only"):
             score = 95
             desc = "Success! Template passed requested structures out of status loops."
@@ -499,9 +502,17 @@ def phase_9_evidence_scoring(validation_data: Dict, count_data: Dict, distributi
 # Summary Reports & Evidence Storage
 # ---------------------------------------------------------------------------
 def build_telegram_report(fid_data, request_data, validation_data, score_data) -> str:
-    lines = [f"<b>RPC MATRIX EVALUATION REPORT</b>\nTarget FID: <code>{fid_data['fid']}</code>\n"]
+    lines = [f"<b>RPC MATRIX EVALUATION REPORT</b>\nTarget FID: <code>{fid_data['fid']}</code>"]
+    lines.append(f"<b>Template Used:</b> <code>{ACTIVE_TEMPLATE}</code>\n")
     for req in request_data["requests"]:
-        lines.append(f"<b>[{req['label']}]</b> Status: {req['status_code']} | XSSI Win: {req['xssi_prefix_detected']} | Bytes: {req['content_length']}")
+        lines.append(
+            f"<b>[{req['label']}]</b>\n"
+            f"Status: {req['status_code']}\n"
+            f"XSSI Win: {req['xssi_prefix_detected']}\n"
+            f"Ack Only: {validation_data['validations'][0]['status_acknowledgment'].get('is_ack_only', False)}\n"
+            f"Bytes: {req['content_length']}\n"
+            f"Preview: <code>{req['text'][:120]}</code>"
+        )
     return "\n".join(lines)
 
 def send_telegram_message(message: str) -> bool:
@@ -514,7 +525,6 @@ def send_telegram_message(message: str) -> bool:
 def save_evidence_files(fid_data, endpoint_data, request_data, validation_data, structure_data, count_data, distribution_data, review_block_data, score_data) -> Dict[str, str]:
     timestamp = endpoint_data["run_timestamp"]
     
-    # Export 1: Main Aggregated Log File
     analysis_report = {
         "fid_analysis": fid_data, "endpoint_construction": endpoint_data, "payload_validation": validation_data,
         "structural_mapping": structure_data, "count_investigation": count_data, "distribution_detection": distribution_data,
@@ -524,17 +534,14 @@ def save_evidence_files(fid_data, endpoint_data, request_data, validation_data, 
     with open(ar_path, "w", encoding="utf-8") as f:
         json.dump(analysis_report, f, indent=2, ensure_ascii=False)
 
-    # Export 2: Isolated Structural Tree Map
     sm_path = os.path.join(EVIDENCE_DIR, f"structure_map_{timestamp}.json")
     with open(sm_path, "w", encoding="utf-8") as f:
         json.dump(structure_data, f, indent=2, ensure_ascii=False)
 
-    # Export 3: Isolated Candidate Scoring Targets Array
     ca_path = os.path.join(EVIDENCE_DIR, f"candidate_arrays_{timestamp}.json")
     with open(ca_path, "w", encoding="utf-8") as f:
         json.dump(distribution_data, f, indent=2, ensure_ascii=False)
 
-    # Export 4: Isolated Validation Check Metrics
     vr_path = os.path.join(EVIDENCE_DIR, f"validation_report_{timestamp}.json")
     with open(vr_path, "w", encoding="utf-8") as f:
         json.dump(validation_data, f, indent=2, ensure_ascii=False)
@@ -549,7 +556,7 @@ def save_evidence_files(fid_data, endpoint_data, request_data, validation_data, 
 
 def main():
     print("=" * 70)
-    print("RUNNING MULTI-TEMPLATE FORENSIC INVESTIGATOR")
+    print(f"RUNNING FORENSIC REGISTRY INVESTIGATOR [{ACTIVE_TEMPLATE}]")
     print("=" * 70)
     fid_data = phase_1_fid_analysis(FID)
     endpoint_data = phase_2_endpoint_construction(fid_data)
