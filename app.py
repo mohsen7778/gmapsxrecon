@@ -13,7 +13,7 @@ import subprocess
 from datetime import datetime
 from flask import Flask, jsonify, request, render_template_string, send_from_directory
 
-# Import the templates register map to explicitly populate the drop-down selector parameters dynamically
+# Import templates register map parameter mappings cleanly
 from templates import TEMPLATES
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -23,7 +23,6 @@ app = Flask(__name__)
 EVIDENCE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "evidence")
 os.makedirs(EVIDENCE_DIR, exist_ok=True)
 
-# UI Template modified to add the drop-down select list parameters cleanly
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -42,11 +41,12 @@ INDEX_HTML = """
         input, select { padding: 12px; background: #000; color: #00ff88; border: 1px solid #333; font-family: monospace; font-size: 14px; border-radius: 4px; }
         input { width: 450px; }
         select { width: 250px; margin-right: 10px; }
-        pre { background: #000; padding: 15px; color: #00ff88; border: 1px solid #222; overflow-x: auto; font-size: 12px; margin-top: 15px; max-height: 500px; }
+        pre { background: #000; padding: 15px; color: #00ff88; border: 1px solid #222; overflow-x: auto; font-size: 12px; margin-top: 15px; max-height: 600px; }
         .file-list { list-style: none; margin-top: 15px; }
         .file-list li { background: #0d0d0d; border: 1px solid #222; padding: 10px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
         .file-list a { color: #00ccff; text-decoration: none; font-weight: bold; }
         .file-list a:hover { text-decoration: underline; }
+        .row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -55,16 +55,28 @@ INDEX_HTML = """
         
         <div class="panel">
             <h2>Execute Matrix Investigation</h2>
-            <p style="color: #888; margin-bottom: 15px;">Select an isolated Protobuf string layout template and verify dynamic FID execution paths.</p>
-            <div style="margin-bottom: 15px; display: flex; align-items: center;">
-                <select id="templateSelect">
-                    {% for key in templates_keys %}
-                    <option value="{{ key }}">{{ key }}</option>
-                    {% endfor %}
-                </select>
-                <input type="text" id="fidInput" value="0x89c2f5d91170f21d:0xdb7aa5363eff196c">
+            <p style="color: #888; margin-bottom: 15px;">Input a raw captured browser payload or select an active template slot to verify custom parameter pathways.</p>
+            
+            <div class="row">
+                <div>
+                    <label style="color: #888;">Select Active Slot: </label>
+                    <select id="templateSelect" onchange="toggleCustomField()">
+                        {% for key in templates_keys %}
+                        <option value="{{ key }}">{{ key }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div id="customPbRow" style="display: none;">
+                    <label style="color: #888; display: block; margin-bottom: 5px;">Raw Captured pb= Value / Request URL:</label>
+                    <input type="text" id="customPbInput" style="width: 100%;" placeholder="Paste full listentitiesreviews URL or just the pb parameter string here...">
+                </div>
+                <div>
+                    <label style="color: #888;">Target Feature ID (FID): </label>
+                    <input type="text" id="fidInput" value="0x89c2f5d91170f21d:0xdb7aa5363eff196c">
+                </div>
             </div>
-            <button class="btn" id="execBtn" onclick="runInvestigation()">Trigger Single-Template Test</button>
+            
+            <button class="btn" id="execBtn" onclick="runInvestigation()">Trigger Isolated-Template Flight</button>
             <pre id="outputLog">Awaiting runtime execution signal...</pre>
         </div>
 
@@ -78,11 +90,21 @@ INDEX_HTML = """
     </div>
 
     <script>
+        function toggleCustomField() {
+            const select = document.getElementById('templateSelect');
+            const customRow = document.getElementById('customPbRow');
+            if (select.value === 'template_d_custom') {
+                customRow.style.display = 'block';
+            } else {
+                customRow.style.display = 'none';
+            }
+        }
+
         async function runInvestigation() {
             const btn = document.getElementById('execBtn');
             const log = document.getElementById('outputLog');
             btn.disabled = true;
-            log.textContent = "Spawning investigator subprocess runtime logs...";
+            log.textContent = "Spawning investigator subprocess runtime logs across dynamic execution target channels...";
             
             try {
                 const res = await fetch('/api/investigate', {
@@ -90,7 +112,8 @@ INDEX_HTML = """
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         fid: document.getElementById('fidInput').value,
-                        template: document.getElementById('templateSelect').value
+                        template: document.getElementById('templateSelect').value,
+                        custom_pb: document.getElementById('customPbInput').value
                     })
                 });
                 const data = await res.json();
@@ -141,25 +164,31 @@ def investigate():
     data = request.get_json(silent=True) or {}
     fid = data.get("fid", "0x89c2f5d91170f21d:0xdb7aa5363eff196c")
     selected_template = data.get("template", "template_a")
+    custom_pb = data.get("custom_pb", "")
 
     if ":" not in fid or not fid.startswith("0x"):
         return jsonify({"status": "error", "error": "Invalid format layout configuration parameter."}), 400
 
+    # Fix 2: Explicit guard verification to block empty custom PB requests
+    if selected_template == "template_d_custom" and not custom_pb.strip():
+        return jsonify({"status": "error", "error": "Custom PB value required."}), 400
+
     try:
         env = os.environ.copy()
         env["INVESTIGATION_FID"] = fid
-        # Map the drop-down template selection directly into the investigator's ACTIVE_TEMPLATE context
         env["ACTIVE_TEMPLATE"] = selected_template
+        env["CUSTOM_RAW_PB"] = custom_pb
 
+        # Fix 1: Dynamically inherit the environment context inside the subprocess script bridge execution string
         result = subprocess.run(
-            [sys.executable, "-c", f"""
+            [sys.executable, "-c", """
+import os
 import sys
 sys.path.insert(0, '.')
 from review_rpc_investigator import *
 import json
 
-FID = "{fid}"
-fid_data = phase_1_fid_analysis(FID)
+fid_data = phase_1_fid_analysis(os.environ["INVESTIGATION_FID"])
 endpoint_data = phase_2_endpoint_construction(fid_data)
 request_data = phase_3_request_execution(endpoint_data)
 validation_data = phase_4_payload_validation(request_data)
@@ -173,16 +202,16 @@ save_evidence_files(fid_data, endpoint_data, request_data, validation_data, stru
 msg = build_telegram_report(fid_data, request_data, validation_data, score_data)
 send_telegram_message(msg)
 
-print(json.dumps({{
+print(json.dumps({
     "status": "completed",
     "scores": score_data["scores"],
     "overall_confidence": score_data["overall_confidence"],
     "validations": validation_data["validations"]
-}}, default=str))
+}, default=str))
 """],
             capture_output=True,
             text=True,
-            timeout=90,
+            timeout=120,
             cwd=os.path.dirname(os.path.abspath(__file__)),
             env=env,
         )
